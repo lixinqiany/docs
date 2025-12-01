@@ -42,3 +42,31 @@ const routes = [
   { path: '/user-:afterUser(.*)', component: UserGeneric },
 ]
 ```
+
+## Routes' Matching Syntax  
+
+When defining a param like `:userId`, Vue Router implicitly uses the regex `([^/]+)` (at least one character that is not a slash `/`) to extract params from URLs. This makes it hard to distinguish `/:orderId` from `/:productName` because they share the same implicit matching pattern. The easiest solution is to add a static segment that differentiates them (for example, `/order/:orderId` and `/product/:productName`). Sometimes we do not want extra static segments, in which case we can apply different regexes directly to the params (for example, `/:orderId(\\d+)` and `/:productName`).
+
+When we expect **repeatable params** like `/first/second/third`, we can use `*` (0 or more) and `+` (1 or more) to mark a param as repeatable (for example, `/:chapters+` matches `/one`, `/one/two`, `/one/two/three`, etc.), and `route.params.chapters` will be an array instead of a string. These modifiers can also be combined with a custom regexp by placing them after the closing parenthesis.
+
+One more important thing is that, by default, routes are **case-insensitive** and match paths **with or without a trailing slash**. For example, a route `/users` matches `/users`, `/users/`, and even `/Users/`. This behavior can be configured with the `strict` and `sensitive` options, which can be set both at the router level and per route:
+```typescript
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    // will match /users/posva but not:
+    // - /users/posva/ because of strict: true
+    // - /Users/posva because of sensitive: true
+    { path: '/users/:id', sensitive: true },
+    // will match /users, /Users, and /users/42 but not /users/ or /users/42/
+    { path: '/users/:id?' },
+  ],
+  strict: true, // applies to all routes
+})
+```
+
+An **optional parameter** ends with `?` and cannot be repeatable.
+
+You can use [paths.esm.dev](https://paths.esm.dev/) to visualize and debug your routes.
+
+When using custom regex, make sure to avoid slow patterns. For example, `.*` matches any character and can lead to serious performance issues if it is combined with a repeatable modifier `*` or `+` and followed by additional segments (for example, `/:pathMatch(.*)*/something-at-the-end`). In practice, use these "match everything" params only **at the very end of the URL**. If you need them in the middle of the path, **do not make them repeatable**.
